@@ -1,0 +1,234 @@
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+#include <set>
+#include <algorithm>
+#include <set>
+#include <fstream>
+#include <sstream>
+#include <exception>
+#include <iomanip>
+
+using namespace std;
+
+class Date {
+public:
+	Date(int a, int b, int c) {
+		year=a;month=b;day=c;
+	}
+  int GetYear() const {
+	  return year;
+  }
+  int GetMonth() const {
+	  return month;
+  }
+  int GetDay() const {
+	  return day;
+  }
+private:
+  int year;
+  int month;
+  int day;
+};
+
+bool operator<(const Date& lhs, const Date& rhs) {
+	if (lhs.GetYear() == rhs.GetYear()) {
+		if (lhs.GetMonth() == rhs.GetMonth()) {
+			return lhs.GetDay()<rhs.GetDay();
+		} else {
+			return lhs.GetMonth()<rhs.GetMonth();
+		}
+	}else {
+		return lhs.GetYear()<rhs.GetYear();
+	}
+}
+
+class Database {
+public:
+  void AddEvent(const Date& date, const string& event) {
+	  Date_event[date].insert(event);
+  }
+  bool DeleteEvent(const Date& date, const string& event) {
+		  if (Date_event[date].count(event)==1) {
+			  Date_event[date].erase(event);
+			  return true;
+		  }else {
+			  return false;
+		  }
+  }
+  int  DeleteDate(const Date& date) {
+	  int cnt=0;
+	  if (Date_event.count(date)) {
+		  for (const auto& s:Date_event[date]) {;
+		  	  ++cnt;
+		  }
+		  Date_event.erase(date);
+		  return cnt;
+	  }
+	  return cnt;
+  }
+
+  void Find(const Date& date) const {
+	  if (Date_event.count(date)) {
+		  for (const auto& s:Date_event.at(date)) {
+			  cout << s << endl;
+		  }
+	  }
+  }
+
+  void Print()  const{
+	  cout << setfill('0');
+	  for (const auto& s:Date_event) {
+		  cout << setw(4) << s.first.GetYear() << "-"
+			   << setw(2) << s.first.GetMonth() << "-"
+			   << setw(2) << s.first.GetDay();
+		  for (const auto& t:s.second) {
+			  cout<<" "<<t;
+		  }
+		  cout<<endl;
+	  }
+  }
+private:
+  map<Date,set<string>> Date_event;
+};
+bool isNumber(const char& Symbol) {return (Symbol >= '0' && Symbol <= '9');}
+bool isFormat(const string& data) {
+	stringstream data1(data);
+	int cnt=0;
+	char symbol;
+	if (data=="") {
+				throw runtime_error("Wrong date format: "+data);
+			}
+	while(data1>>symbol) {
+		if (isNumber(symbol)) {
+			if (data1.peek()=='-') {
+				data1.ignore(1);
+				++cnt;
+				if (cnt==3) {
+					throw runtime_error("Wrong date format: "+data);
+				}
+			}
+		} else if (symbol=='-') {
+			if (isNumber(data1.peek())!=1) {
+				throw runtime_error("Wrong date format: "+data);
+			}
+		} else {throw runtime_error("Wrong date format: "+data);}
+	}
+}
+
+bool isMonthandDay (const string& data) {
+	stringstream data1(data);
+	stringstream data2(data);
+	string year;
+	string month;
+	string day;
+	int year1,month1,day1;
+	if (data1.peek()=='-') {
+		char c0;
+		data1 >> c0;
+		getline(data1,year,'-');
+		year=c0+year;
+	} else { getline(data1,year,'-');}
+	data2>>year1;
+	data2.ignore(1);
+	if (data1.peek()=='-') {
+		char c1;
+		data1 >> c1;
+		getline(data1,month,'-');
+		month=c1+month;
+	}else {getline(data1,month,'-');}
+	data2>>month1;
+	data2.ignore(1);
+	if (data1.peek()=='-') {
+		char c2;
+		data1 >> c2;
+		getline(data1,day);
+		day=c2+day;
+	} else {	getline(data1,day);}
+	data2>>day1;
+	if (month1>=1 && month1<=12) {
+		if (day1>=1 && day1<=31) {
+			return true;
+		}else {
+			throw runtime_error("Day value is invalid: "+day);
+		}
+	}else {
+		throw runtime_error("Month value is invalid: "+month);
+	}
+}
+
+int main() {
+    Database db;
+    string command;
+    string operation;
+    string data;
+    string event;
+    int year,month,day;
+    try{while (getline(cin, command)) {
+    	if(command!=""){stringstream str(command);
+    	str >> operation;
+    	if (operation == "Del") {
+    		str >> data;
+    		if (isFormat(data)==true) {
+    		    if (isMonthandDay(data)==true) {
+    		    	stringstream str2(data);
+    		    	str2 >> year;
+    		    	str2.ignore(1);
+    		    	str2 >> month;
+    		    	str2.ignore(1);
+    		    	str2 >> day;
+    		    	if(str>>event) {
+    		    		if(db.DeleteEvent({year,month,day},event)){
+    		    			cout << "Deleted successfully" << endl;
+    		    		} else {
+    		    			cout << "Event not found" << endl;
+    		    		}
+    		    	}else {
+    		    		cout<<"Deleted "+to_string(db.DeleteDate({year,month,day}))+" events"<<endl;
+    		    	}
+    		    }
+    		}
+    	}
+    	if (operation == "Add") {
+    		str >> data;
+    		if (isFormat(data)==true) {
+    			if (isMonthandDay(data)==true) {
+    				str >> event;
+    				stringstream str2(data);
+    				str2 >> year;
+    				str2.ignore(1);
+    				str2 >> month;
+    				str2.ignore(1);
+    				str2 >> day;
+    				db.AddEvent({year,month,day},event);
+    			}
+    		}
+    	}
+    	if (operation == "Find") {
+    		str >> data;
+    		if (isFormat(data)==true) {
+    			if (isMonthandDay(data)==true) {
+    				stringstream str2(data);
+    				str2 >> year;
+    				str2.ignore(1);
+    				str2 >> month;
+    				str2.ignore(1);
+    				str2 >> day;
+    				db.Find({year,month,day});
+    			}
+    		}
+    	}
+    	if (operation == "Print") {
+    		db.Print();
+    	}
+    	if (operation!="Del"&& operation!="Add" && operation!="Find" && operation!="Print") {
+    		cout << "Unknown command: "+operation << endl;
+    	}
+    	}
+    }
+}catch (exception& a) {
+	cout << a.what();
+}
+  return 0;
+}
